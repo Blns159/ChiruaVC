@@ -1,0 +1,2 @@
+nuVu|/home/vunv/VLSP2025/FreeVC/p259_023.wav|/home/vunv/VLSP2025/FreeVC/p273_023.wav
+Vunu|/home/vunv/VLSP2025/FreeVC/p273_023.wav|/home/vunv/VLSP2025/FreeVC/p259_023.wav
