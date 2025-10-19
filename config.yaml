@@ -1,0 +1,80 @@
+# Configuration for FreeVC Vietnamese Voice Conversion
+
+# Model Configuration
+model:
+  encoder:
+    type: "wavlm"  # Using WavLM for better multilingual support including Vietnamese
+    hidden_channels: 768
+    out_channels: 256
+  
+  decoder:
+    type: "hifigan"
+    hidden_channels: 512
+    upsample_rates: [8, 8, 2, 2]
+    upsample_kernel_sizes: [16, 16, 4, 4]
+    resblock_kernel_sizes: [3, 7, 11]
+    resblock_dilation_sizes: [[1, 3, 5], [1, 3, 5], [1, 3, 5]]
+  
+  speaker_encoder:
+    hidden_dim: 256
+    embedding_dim: 256
+  
+  discriminator:
+    periods: [2, 3, 5, 7, 11]
+
+# Loss Configuration (Optimized for Vietnamese)
+loss:
+  # Reconstruction loss weight (higher for Vietnamese tonal preservation)
+  reconstruction_weight: 45.0  # Increased from standard 30.0 for better tone preservation
+  
+  # Feature matching loss (important for Vietnamese phonetic features)
+  feature_matching_weight: 3.0  # Increased from 2.0 for better phonetic matching
+  
+  # Mel-spectrogram loss (crucial for Vietnamese tone accuracy)
+  mel_loss_weight: 50.0  # Increased from 45.0 for Vietnamese tonal features
+  
+  # Adversarial loss
+  adversarial_weight: 1.0
+  
+  # Generator loss weight
+  gen_loss_weight: 1.0
+  
+  # Discriminator loss weight
+  disc_loss_weight: 1.0
+  
+  # Vietnamese-specific: Fundamental frequency (F0) loss for tonal preservation
+  f0_loss_weight: 15.0  # New loss component for Vietnamese tone preservation
+  
+  # Vietnamese-specific: Prosody loss for natural Vietnamese speech
+  prosody_loss_weight: 5.0  # New loss component for Vietnamese prosody
+
+# Training Configuration
+training:
+  batch_size: 16
+  learning_rate: 0.0002
+  adam_beta1: 0.8
+  adam_beta2: 0.99
+  lr_decay: 0.999
+  max_epochs: 1000
+  save_interval: 10
+  log_interval: 10
+  validation_interval: 50
+
+# Audio Configuration
+audio:
+  sampling_rate: 22050
+  n_fft: 1024
+  hop_length: 256
+  win_length: 1024
+  n_mels: 80
+  fmin: 0
+  fmax: 8000
+
+# Vietnamese-specific Configuration
+vietnamese:
+  # Use Vietnamese-specific preprocessing
+  use_tone_normalization: true
+  # Preserve tonal features during conversion
+  preserve_tones: true
+  # Vietnamese has 6 tones - ensure proper handling
+  num_tones: 6
