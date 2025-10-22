@@ -1,2 +1,7 @@
-nuVu|/home/vunv/VLSP2025/FreeVC/p259_023.wav|/home/vunv/VLSP2025/FreeVC/p273_023.wav
-Vunu|/home/vunv/VLSP2025/FreeVC/p273_023.wav|/home/vunv/VLSP2025/FreeVC/p259_023.wav
+NamB-NamB|dataset/audio_vlsp/SPEAKER_240/SPEAKER_240_000.wav|dataset/audio_vlsp/SPEAKER_293/SPEAKER_293_036.wav
+NamN-NamN|dataset/audio_vlsp/SPEAKER_71/SPEAKER_71_018.wav|dataset/audio_vlsp/SPEAKER_163/SPEAKER_163_004.wav
+NuN-NuN|dataset/audio_vlsp/SPEAKER_289/SPEAKER_289_001.wav|dataset/audio_vlsp/SPEAKER_244/SPEAKER_244_215.wav
+NuB-NuB|dataset/audio_vlsp/SPEAKER_35/SPEAKER_35_013.wav|dataset/audio_vlsp/SPEAKER_80/SPEAKER_80_016.wav
+NamB-NuB|dataset/audio_vlsp/SPEAKER_293/SPEAKER_293_036.wav|dataset/audio_vlsp/SPEAKER_80/SPEAKER_80_016.wav
+NamB-NamBUS|dataset/audio_vlsp/SPEAKER_240/SPEAKER_240_000.wav|28_0280.wav
+NamBUS-NamB|28_0280.wav|dataset/audio_vlsp/SPEAKER_240/SPEAKER_240_000.wav

@@ -16,6 +16,8 @@
     "c_mel": 45,
     "c_kl": 1.0,
     "c_cyclic": 0.1,
+    "cyclic_start_epoch": 75,
+    "cyclic_rampup_epochs": 25,
     "use_sr": true,
     "max_speclen": 128,
     "port": "8001"

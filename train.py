@@ -140,6 +140,25 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   if hasattr(hps.train, 'c_cyclic') and hps.train.c_cyclic > 0:
     cmodel = utils.get_cmodel(rank)
     cmodel.eval()  # Set to eval mode
+  
+  # Calculate cyclic loss weight based on epoch (warmup scheduling)
+  cyclic_weight = 0
+  if hasattr(hps.train, 'c_cyclic') and hps.train.c_cyclic > 0:
+    cyclic_start = getattr(hps.train, 'cyclic_start_epoch', 75)
+    cyclic_rampup = getattr(hps.train, 'cyclic_rampup_epochs', 25)
+    
+    if epoch < cyclic_start:
+      cyclic_weight = 0
+    elif epoch < cyclic_start + cyclic_rampup:
+      # Linear ramp up from 0 to c_cyclic
+      progress = (epoch - cyclic_start) / cyclic_rampup
+      cyclic_weight = hps.train.c_cyclic * progress
+    else:
+      cyclic_weight = hps.train.c_cyclic
+    
+    # Log warmup info at start of epoch
+    if rank == 0:
+      logger.info(f'Cyclic loss weight for epoch {epoch}: {cyclic_weight:.4f}')
 
   net_g.train()
   net_d.train()
@@ -211,9 +230,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         
         # FIX VUNV
         # ==========CYCLIC CONSISTENCY LOSS==========
-        # Chỉ tính cyclic loss nếu có config và batch size >= 2
+        # Chỉ tính cyclic loss nếu có config và batch size >= 2 và cyclic_weight > 0
         loss_cyclic = 0
-        if hasattr(hps.train, 'c_cyclic') and hps.train.c_cyclic > 0 and c.size(0) >= 2:
+        if cyclic_weight > 0 and c.size(0) >= 2 and cmodel is not None:
           # Random permutation để tạo cross-speaker pairs
           perm_idx = torch.randperm(c.size(0)).to(c.device)
           
@@ -241,7 +260,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           loss_cyclic = cyclic_consistency_loss(
             y[:, :, :min_len], 
             y_aba[:, :, :min_len]
-          ) * hps.train.c_cyclic
+          ) * cyclic_weight  # Use warmup weight instead of hps.train.c_cyclic
         # ===========================================
         
         loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_cyclic
@@ -270,8 +289,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         
         # FIX VUNV
         # Log cyclic loss nếu có
-        if hasattr(hps.train, 'c_cyclic') and hps.train.c_cyclic > 0:
-          scalar_dict.update({"loss/g/cyclic": loss_cyclic})
+        if cyclic_weight > 0:
+          scalar_dict.update({
+            "loss/g/cyclic": loss_cyclic,
+            "schedule/cyclic_weight": cyclic_weight  # Log warmup progress
+          })
 
         scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)})
         scalar_dict.update({"loss/d_r/{}".format(i): v for i, v in enumerate(losses_disc_r)})

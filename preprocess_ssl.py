@@ -25,14 +25,18 @@ def process(filename):
     save_dir = os.path.join(out_dir, speaker_id)
     os.makedirs(save_dir, exist_ok=True)
     
+    basename = os.path.basename(filename)
+    save_name = os.path.join(save_dir, basename.replace(".wav", ".pt"))
+    
+    if os.path.exists(save_name):
+        return
+    
     # Load và process audio
     wav, _ = librosa.load(filename, sr=sr)
     wav = torch.from_numpy(wav).unsqueeze(0).cuda()
     c = utils.get_content(cmodel, wav)
     
-    # Save với tên file giống input
-    basename = os.path.basename(filename)
-    save_name = os.path.join(save_dir, basename.replace(".wav", ".pt"))
+    # Save file
     torch.save(c.cpu(), save_name)
 
 

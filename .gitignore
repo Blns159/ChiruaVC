@@ -1,0 +1,6 @@
+dataset/
+output/
+logs/
+wavlm/WavLM-Large.pt
+hifigan/generator_v1
+__pycache__/
