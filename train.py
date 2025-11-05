@@ -28,8 +28,8 @@ from losses import (
   generator_loss,
   discriminator_loss,
   feature_loss,
-  kl_loss, # FIX VUNV
-  cyclic_consistency_loss # FIX VUNV
+  kl_loss,
+  cyclic_consistency_loss
 )
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 
@@ -135,13 +135,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   train_loader.batch_sampler.set_epoch(epoch)
   global global_step
 
-  # FIX VUNV: Load SSL model một lần thay vì mỗi iteration
   cmodel = None
   if hasattr(hps.train, 'c_cyclic') and hps.train.c_cyclic > 0:
     cmodel = utils.get_cmodel(rank)
-    cmodel.eval()  # Set to eval mode
+    cmodel.eval()
   
-  # Calculate cyclic loss weight based on epoch (warmup scheduling)
   cyclic_weight = 0
   if hasattr(hps.train, 'c_cyclic') and hps.train.c_cyclic > 0:
     cyclic_start = getattr(hps.train, 'cyclic_start_epoch', 75)
@@ -150,13 +148,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     if epoch < cyclic_start:
       cyclic_weight = 0
     elif epoch < cyclic_start + cyclic_rampup:
-      # Linear ramp up from 0 to c_cyclic
       progress = (epoch - cyclic_start) / cyclic_rampup
       cyclic_weight = hps.train.c_cyclic * progress
     else:
       cyclic_weight = hps.train.c_cyclic
     
-    # Log warmup info at start of epoch
     if rank == 0:
       logger.info(f'Cyclic loss weight for epoch {epoch}: {cyclic_weight:.4f}')
 
@@ -231,43 +227,26 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
         
-        # FIX VUNV
-        # ==========CYCLIC CONSISTENCY LOSS==========
-        # Chỉ tính cyclic loss nếu có config và batch size >= 2 và cyclic_weight > 0
         loss_cyclic = 0
         if cyclic_weight > 0 and c.size(0) >= 2 and cmodel is not None:
-          # Random permutation để tạo cross-speaker pairs
           perm_idx = torch.randperm(c.size(0)).to(c.device)
-          
-          # Content từ sample gốc, speaker từ sample khác (random permutation)
           g_permuted = g[perm_idx] if hps.model.use_spk else None
           mel_permuted = mel[perm_idx] if not hps.model.use_spk else None
           
-          # Forward: A → B (content_A + speaker_B)
-          # Dùng infer để generate audio B
-          with torch.no_grad():
-            # Generate intermediate audio với cross-speaker
-            y_ab, _, _, _ = net_g(c, spec, g=g_permuted, mel=mel_permuted)
+          y_ab = net_g.module.infer(c, g=g_permuted, mel=mel_permuted)
           
-          # Extract content từ generated audio (backward pass)
-          # Dùng SSL model để extract content từ y_ab
           with torch.no_grad():
             c_ab = utils.get_content(cmodel, y_ab)
           
-          # Backward: B → A' (content_B + speaker_A) 
-          y_aba, _, _, _ = net_g(c_ab, spec, g=g, mel=mel)
+          y_aba = net_g.module.infer(c_ab, g=g, mel=mel)
           
-          # Cyclic consistency loss: ||A - A'||
-          # Slice để match lengths
           min_len = min(y.size(-1), y_aba.size(-1))
           loss_cyclic = cyclic_consistency_loss(
             y[:, :, :min_len], 
             y_aba[:, :, :min_len]
-          ) * cyclic_weight  # Use warmup weight instead of hps.train.c_cyclic
-        # ===========================================
+          ) * cyclic_weight
         
         loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_cyclic
-        # FIX VUNV
     # ==========BẬT FP16==============
 
     optim_g.zero_grad()
@@ -290,12 +269,10 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
         scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/kl": loss_kl})
         
-        # FIX VUNV
-        # Log cyclic loss nếu có
         if cyclic_weight > 0:
           scalar_dict.update({
             "loss/g/cyclic": loss_cyclic,
-            "schedule/cyclic_weight": cyclic_weight  # Log warmup progress
+            "schedule/cyclic_weight": cyclic_weight
           })
 
         scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)})

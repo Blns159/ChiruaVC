@@ -1,0 +1,15 @@
+glob2
+tqdm
+librosa
+numpy
+scipy
+tensorboard
+webrtcvad
+protobuf==3.20.3
+tensorboard
+matplotlib
+torch==2.2.2
+torchaudio==2.2.2
+torchvision
+hyperpyyaml
+speechbrain

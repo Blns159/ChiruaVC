@@ -94,6 +94,11 @@ def encode_batch_vn(wavs, model, device, params):
 speaker_dirs = sorted(glob(f'{IN_DIR}/SPEAKER_*'))
 for speaker_dir in tqdm(speaker_dirs, desc="ECAPA-TDNN"):
     speaker_id = os.path.basename(speaker_dir)
+    npy_path = f'{ECAPA_OUT_DIR}/{speaker_id}.npy'
+    
+    if os.path.exists(npy_path):
+        continue
+    
     wav_files = glob(f'{speaker_dir}/*.wav') + glob(f'{speaker_dir}/*.mp3')
     if not wav_files:
         continue
@@ -109,7 +114,7 @@ for speaker_dir in tqdm(speaker_dirs, desc="ECAPA-TDNN"):
     if all_embeds:
         global_embed = np.mean(all_embeds, axis=0)
         global_embed = global_embed / np.linalg.norm(global_embed)
-        np.save(f'{ECAPA_OUT_DIR}/{speaker_id}.npy', global_embed, allow_pickle=False)
+        np.save(npy_path, global_embed, allow_pickle=False)
 
 print(f"[ECAPA]: Đã xử lý và lưu tại {ECAPA_OUT_DIR}")
 # ====================================================
@@ -126,7 +131,7 @@ for speaker_dir_path in tqdm(speaker_dirs, desc="Splitting"):
         continue
     shuffle(wavs)
     num_wavs = len(wavs)
-    val_size = max(1, (num_wavs + 9) // 10)
+    val_size = max(1, int(num_wavs * 0.02))
     current_val = wavs[:val_size]
     current_train = wavs[val_size:]
     for fname in current_train:

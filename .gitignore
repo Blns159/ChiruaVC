@@ -4,3 +4,4 @@ logs/
 wavlm/WavLM-Large.pt
 hifigan/generator_v1
 __pycache__/
+.vunv

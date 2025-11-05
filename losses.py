@@ -60,31 +60,8 @@ def kl_loss(z_p, logs_q, m_p, logs_p, z_mask):
   l = kl / torch.sum(z_mask)
   return l
 
-# FIX VUNV
+
 def cyclic_consistency_loss(original_audio, reconstructed_audio):
-  """
-  Cyclic Consistency Loss để đảm bảo disentanglement giữa content và speaker.
-  
-  Quá trình:
-  1. Audio A với (content_A, speaker_A)
-  2. Forward: A → B (dùng content_A, speaker_B) 
-  3. Extract content từ generated B
-  4. Backward: B → A' (dùng content_B, speaker_A)
-  5. Loss: ||A - A'||
-  
-  Args:
-    original_audio: Audio gốc [B, 1, T]
-    reconstructed_audio: Audio sau cyclic reconstruction [B, 1, T]
-  
-  Returns:
-    Cyclic consistency loss (scalar)
-  """
-  # L1 loss để preserve waveform details
   loss_l1 = F.l1_loss(original_audio, reconstructed_audio)
-  
-  # L2 loss để penalize large deviations
   loss_l2 = F.mse_loss(original_audio, reconstructed_audio)
-  
-  # Kết hợp cả L1 và L2
-  # L1 tốt cho sparse errors, L2 tốt cho penalizing outliers
   return loss_l1 + 0.5 * loss_l2

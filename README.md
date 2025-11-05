@@ -6,5 +6,5 @@ Download [HiFi-GAN model](https://github.com/jik876/hifi-gan) and put it under d
 cd ChiruaVC
 conda env create -f environment.yml
 python preprocess.py
-CUDA_VISIBLE_DEVICES=0 python train.py -c configs/freevc.json -m freevc
+CUDA_VISIBLE_DEVICES=0 python train.py -c configs/chiruavc.json -m chiruavc
 ```
