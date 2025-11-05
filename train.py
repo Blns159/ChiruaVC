@@ -113,8 +113,18 @@ def run(rank, n_gpus, hps):
   scheduler_d = torch.optim.lr_scheduler.ExponentialLR(optim_d, gamma=hps.train.lr_decay, last_epoch=epoch_str-2)
 
   scaler = GradScaler(enabled=hps.train.fp16_run)
+  
+  d_lr_reduced = False
 
   for epoch in range(epoch_str, hps.train.epochs + 1):
+    if epoch == hps.train.warmup_epochs + 1 and not d_lr_reduced:
+      lr_d_ratio = getattr(hps.train, 'lr_d_ratio', 0.2)
+      for param_group in optim_d.param_groups:
+        param_group['lr'] = param_group['lr'] * lr_d_ratio
+      d_lr_reduced = True
+      if rank == 0:
+        logger.info(f'Reduced discriminator LR by {lr_d_ratio}x after warmup')
+    
     if rank==0:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
     else:
@@ -207,17 +217,13 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         # loss_disc_g là loss giả
         loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
         loss_disc_all = loss_disc
-    # ==========BẬT FP16==============
-    if epoch < hps.train.warmup_epochs:
-      optim_d.zero_grad()
-      scaler.scale(loss_disc_all).backward()
-      scaler.unscale_(optim_d)
-      grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
-      scaler.step(optim_d)
-    else:
-      grad_norm_d = 0
+    
+    optim_d.zero_grad()
+    scaler.scale(loss_disc_all).backward()
+    scaler.unscale_(optim_d)
+    grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
+    scaler.step(optim_d)
 
-    # ==========BẬT FP16==============
     with autocast(enabled=hps.train.fp16_run):
       # Generator
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat) # fmap_r 
