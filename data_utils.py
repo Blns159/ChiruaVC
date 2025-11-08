@@ -76,22 +76,26 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             torch.save(spec, spec_filename)
             
         if self.use_spk:
-            # Load global speaker embedding (per-speaker)
-            # Ưu tiên đường dẫn chuẩn: dataset/spk/{SPEAKER_ID}.npy
-            # Fallback: {speaker_dir}/{SPEAKER_ID}.npy (nếu tồn tại)
+            utterance_id = os.path.splitext(basename)[0]  # Bỏ extension
+            # Per-utterance embedding path
+            spk_per_utt = os.path.join("dataset", "spk", speaker_id, f"{utterance_id}.npy")
+            # Fallback: Global embedding (nếu chưa có per-utterance)
             spk_global = os.path.join("dataset", "spk", f"{speaker_id}.npy")
             spk_local = os.path.join(speaker_dir, f"{speaker_id}.npy")
 
-            if os.path.exists(spk_global):
+            if os.path.exists(spk_per_utt):
+                spk_path = spk_per_utt
+            elif os.path.exists(spk_global):
                 spk_path = spk_global
             elif os.path.exists(spk_local):
                 spk_path = spk_local
             else:
                 raise FileNotFoundError(
-                    "Speaker embedding not found. Looked in:\n"
-                    f" - {spk_global}\n"
-                    f" - {spk_local}\n"
-                    "Please generate embeddings, e.g.: python preprocess_spk_global.py"
+                    f"Speaker embedding not found for {basename}. Looked in:\n"
+                    f" - {spk_per_utt} (per-utterance)\n"
+                    f" - {spk_global} (global)\n"
+                    f" - {spk_local} (local)\n"
+                    "Please generate embeddings: python preprocess.py"
                 )
 
             spk_np = np.load(spk_path)

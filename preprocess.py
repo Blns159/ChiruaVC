@@ -12,6 +12,7 @@ import utils
 from wavlm import WavLM, WavLMConfig
 from hyperpyyaml import load_hyperpyyaml
 from random import shuffle
+from speaker_encoder.audio import preprocess_wav  # Import preprocessing từ speaker_encoder
 
 # ==================== CÀI ĐẶT CHUNG ====================
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -80,6 +81,7 @@ ecapa.eval()
 ecapa.to(device)
 ckpt = torch.load(ECAPA_CKPT, map_location=device)
 ecapa.load_state_dict(ckpt, strict=False)
+
 def encode_batch_vn(wavs, model, device, params):
     if len(wavs.shape) == 1:
         wavs = wavs.unsqueeze(0)
@@ -92,31 +94,56 @@ def encode_batch_vn(wavs, model, device, params):
         embeddings = model(feats, wav_lens)
     return F.normalize(embeddings, dim=-1)
 speaker_dirs = sorted(glob(f'{IN_DIR}/SPEAKER_*'))
+
+# Config: Có dùng preprocessing không?
+USE_PREPROCESSING = True  # Set False để skip preprocessing
+
+# ==================== PER-UTTERANCE EMBEDDINGS ====================
+print(f"  Mode: PER-UTTERANCE (mỗi utterance 1 embedding riêng)")
 for speaker_dir in tqdm(speaker_dirs, desc="ECAPA-TDNN"):
     speaker_id = os.path.basename(speaker_dir)
-    npy_path = f'{ECAPA_OUT_DIR}/{speaker_id}.npy'
     
-    if os.path.exists(npy_path):
-        continue
+    # Tạo thư mục cho speaker
+    speaker_emb_dir = os.path.join(ECAPA_OUT_DIR, speaker_id)
+    os.makedirs(speaker_emb_dir, exist_ok=True)
     
     wav_files = glob(f'{speaker_dir}/*.wav') + glob(f'{speaker_dir}/*.mp3')
     if not wav_files:
         continue
-    all_embeds = []
+    
     for wav_path in wav_files:
-        sig, sr = torchaudio.load(wav_path)
-        if sig.dim() > 1:
-            sig = sig[0]
-        if sr != SAMPLE_RATE:
-            sig = torchaudio.transforms.Resample(sr, SAMPLE_RATE)(sig)
+        # Tạo tên file embedding tương ứng
+        basename = os.path.basename(wav_path)
+        utterance_id = os.path.splitext(basename)[0]  # Bỏ extension
+        npy_path = os.path.join(speaker_emb_dir, f"{utterance_id}.npy")
+        
+        # Skip nếu đã tồn tại
+        if os.path.exists(npy_path):
+            continue
+        
+        # Load audio
+        if USE_PREPROCESSING:
+            # Với preprocessing (VAD + normalize)
+            wav_np = preprocess_wav(wav_path)
+            sig = torch.from_numpy(wav_np).float()
+        else:
+            # Không preprocessing (như code cũ)
+            sig, sr = torchaudio.load(wav_path)
+            if sig.dim() > 1:
+                sig = sig[0]
+            if sr != SAMPLE_RATE:
+                sig = torchaudio.transforms.Resample(sr, SAMPLE_RATE)(sig)
+        
+        # Tính embedding cho utterance này
         embed = encode_batch_vn(sig, ecapa, device, params)
-        all_embeds.append(embed.squeeze().cpu().numpy())
-    if all_embeds:
-        global_embed = np.mean(all_embeds, axis=0)
-        global_embed = global_embed / np.linalg.norm(global_embed)
-        np.save(npy_path, global_embed, allow_pickle=False)
+        embed_np = embed.squeeze().cpu().numpy()
+        
+        # Lưu embedding riêng cho utterance
+        np.save(npy_path, embed_np, allow_pickle=False)
 
-print(f"[ECAPA]: Đã xử lý và lưu tại {ECAPA_OUT_DIR}")
+print(f"[ECAPA]: Đã xử lý và lưu tại {ECAPA_OUT_DIR}/")
+print(f"         Mode: PER-UTTERANCE (mỗi utterance 1 file .npy)")
+print(f"         Preprocessing: {'ENABLED' if USE_PREPROCESSING else 'DISABLED'}")
 # ====================================================
 
 
