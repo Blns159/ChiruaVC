@@ -1,2 +1,0 @@
-dataset/wav/SPEAKER_28/SPEAKER_28_0003.wav
-dataset/wav/SPEAKER_29/SPEAKER_29_00033.wav

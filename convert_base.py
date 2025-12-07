@@ -12,15 +12,12 @@ from hyperpyyaml import load_hyperpyyaml
 from ECAPA_TDNN.utils import encode_batch_vn
 import logging
 
-# IMPORT HÀM MỚI
-from gender.convert_gender import align_source_pitch_to_target
-
 logging.getLogger('numba').setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":
     hpfile = "ECAPA_TDNN/config.json"
-    ptfile = "ECAPA_TDNN/G_80000.pth"
+    ptfile = "ECAPA_TDNN/G_280000.pth"
     txtpath = "convert.txt"
     outdir = "./"
     use_timestamp = False
@@ -67,12 +64,6 @@ if __name__ == "__main__":
         for line in tqdm(zip(titles, srcs, tgts), total=len(titles)):
             title, src, tgt = line
             
-            # --- PHẦN SỬA ĐỔI: PRE-PROCESSING VỚI PRAAT ---
-            # Hàm này sẽ tự kiểm tra, nếu lệch giới tính thì tạo file _aligned.wav
-            # Nếu cùng giới tính thì trả về đường dẫn gốc src
-            processed_src_path = align_source_pitch_to_target(src, tgt)
-            # ----------------------------------------------
-
             # Load Target Audio
             wav_tgt_np, _ = librosa.load(tgt, sr=hps.data.sampling_rate)
             wav_tgt_np, _ = librosa.effects.trim(wav_tgt_np, top_db=20)
@@ -98,8 +89,8 @@ if __name__ == "__main__":
                     hps.data.mel_fmax
                 )
             
-            # Load Source Audio (Sử dụng file đã qua xử lý Praat)
-            wav_src_np, _ = librosa.load(processed_src_path, sr=hps.data.sampling_rate)
+            # Load Source Audio
+            wav_src_np, _ = librosa.load(src, sr=hps.data.sampling_rate)
             wav_src = torch.from_numpy(wav_src_np).unsqueeze(0).cuda()
             
             # Extract Content

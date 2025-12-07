@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Waveform MOS vs SMOS</title>
+<script src="https://unpkg.com/wavesurfer.js"></script>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #1e1f29, #2b2d3a);
+        margin: 0;
+        margin-right: 320px;
+        padding: 40px;
+        color: #fff;
+    }
+    h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-weight: 600;
+    }
+    .card {
+        backdrop-filter: blur(14px);
+        background: rgba(255, 255, 255, 0.09);
+        padding: 18px;
+        border-radius: 16px;
+        margin-bottom: 35px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+    }
+    .title {
+        font-size: 18px;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    .wave-box {
+        margin-bottom: 18px;
+    }
+    .label {
+        margin-bottom: 6px;
+        margin-top: 12px;
+        font-size: 14px;
+        opacity: .9;
+    }
+    .label:first-of-type {
+        margin-top: 0;
+    }
+    button {
+        margin-top: 0;
+        margin-bottom: 8px;
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        background: #3b7cff;
+        color: white;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .rating-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+        height: 32px;
+    }
+    .stars {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+    }
+    .star {
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+        transition: color 0.2s ease;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin: 0;
+        padding: 0;
+    }
+    .star:hover {
+        color: #ffd700;
+    }
+    .star.active {
+        color: #ffd700;
+    }
+    #criteria-sidebar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 100%;
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(14px);
+        box-shadow: -4px 0 16px rgba(0,0,0,0.4);
+        padding: 20px;
+        color: #fff;
+        overflow-y: auto;
+    }
+
+    #criteria-sidebar h2 {
+        margin-top: 0;
+        font-size: 20px;
+    }
+
+    #criteria-sidebar .section {
+        margin-top: 10px;
+    }
+
+    #criteria-sidebar p {
+        font-size: 12px;
+        line-height: 1.0;
+        opacity: .9;
+    }
+</style>
+</head>
+
+<body>
+<h1>Đối chiếu MOS – SMOS bằng Waveform</h1>
+<div id="criteria-sidebar">
+    <h2>Tiêu chí đánh giá</h2>
+
+    <div class="section">
+        <h3>MOS - Độ tự nhiên</h3>
+        <p><b>5</b> - Hoàn toàn giống người thật thu âm. Không có tạp âm hay giọng máy.</p>
+        <p><b>4</b> - Giống người thật, nhưng chất lượng âm thanh hơi kém (như thu bằng mic rẻ hoặc có tiếng xì nhẹ).</p>
+        <p><b>3</b> - Vẫn nghe hiểu rõ nội dung, nhưng cảm nhận rõ là giọng tổng hợp (hơi robotic, méo tiếng).</p>
+        <p><b>2</b> - Giọng rất máy, ngắt nghỉ sai, nuốt âm, phải tập trung mới nghe hiểu.</p>
+        <p><b>1</b> - Toàn tiếng ồn/nhiễu, hoặc không thể nghe ra nội dung gì.</p>
+    </div>
+
+    <div class="section">
+        <h3>SMOS - Độ giống target</h3>
+        <p><b>5:Chắc chắn là một người</b> - Hai file nghe y hệt giọng của cùng một người (chỉ khác nội dung nói).</p>
+        <p><b>4:Có lẽ là một người</b> - Có lẽ là một người:</b> Rất giống, nhưng file kết quả nghe như đang bị ốm, mệt hoặc dùng thiết bị thu âm khác.</p>
+        <p><b>3:Không chắc chắn</b> - Có nét giống (âm sắc), nhưng cũng có nét khác (ngữ điệu/cách nhả chữ). Khó phân biệt là cùng người hay người giả giọng.</p>
+        <p><b>2:Chắc chắn là hai người khác nhau:</b> - Nghe giọng khác nhau, nhưng vẫn cùng giới tính và độ tuổi.</p>
+        <p><b>1:Hoàn toàn khác biệt</b> - Khác hẳn về giới tính, độ tuổi hoặc chất giọng</p>
+    </div>
+
+    <div class="section">
+        <h3>Lưu ý khi đánh giá</h3>
+        <p> Nghe OUT đầu tiên để chấm MOS.</p>
+        <p> Sau khi nghe hết OUT, nghe lại cặp OUT-TGT để chấm SMOS.</p>
+        <p> Nghe 1 lần chưa chắc - nên nghe lại cả SCR để đối chiếu điểm MOS.</p>
+    </div>
+</div>
+<script>
+// Danh sách cặp file của bạn
+const items = [
+    {
+        name: "♂B60_to_♂B30",
+        src: "MOS/M_U1_B60.wav",
+        tgt: "MOS/M_U2_B30.wav",
+        out: "output/freevc_ecapa/M_B60_to_M_B30__U1-U2.wav"
+    },
+    {
+        name: "♂B30_to_♂B60",
+        src: "MOS/M_U1_B30.wav",
+        tgt: "MOS/M_U2_B60.wav",
+        out: "output/freevc_ecapa/M_B30_to_M_B60__U1-U2.wav"
+    },
+    {
+        name: "♀N60_to_♀N30",
+        src: "MOS/F_U1_N60.wav",
+        tgt: "MOS/F_U2_N30.wav",
+        out: "output/freevc_ecapa/F_N60_to_F_N30__U1-U2.wav"
+    },
+    {
+        name: "♂N30_to_♀N30",
+        src: "MOS/M_U1_N30.wav",
+        tgt: "MOS/F_U2_N30.wav",
+        out: "output/freevc_ecapa/M_N30_to_F_N30__U1-U2.wav"
+    },
+    {
+        name: "♂B30_to_♀B30",
+        src: "MOS/M_U1_B30.wav",
+        tgt: "MOS/F_U2_B30.wav",
+        out: "output/freevc_ecapa/M_B30_to_F_B30__U1-U2.wav"
+    },
+    {
+        name: "♀B30_to_♂B30",
+        src: "MOS/F_U1_B30.wav",
+        tgt: "MOS/M_U2_B30.wav",
+        out: "output/freevc_ecapa/F_B30_to_M_B30__U1-U2.wav"
+    },
+    {
+        name: "♂B30_to_♂N30",
+        src: "MOS/M_U1_B30.wav",
+        tgt: "MOS/M_U2_N30.wav",
+        out: "output/freevc_ecapa/M_B30_to_M_N30__U1-U2.wav"
+    },
+    {
+        name: "♀N30_to_♀B30",
+        src: "MOS/F_U1_N30.wav",
+        tgt: "MOS/F_U2_B30.wav",
+        out: "output/freevc_ecapa/F_N30_to_F_B30__U1-U2.wav"
+    },
+    {
+        name: "♂B30_to_♂B30",
+        src: "MOS/M_U1_B30.wav",
+        tgt: "MOS/M_U2_B30.wav",
+        out: "output/freevc_ecapa/M_B30_to_M_B30__U1-U2.wav"
+    }
+];
+
+// Tạo UI và waveform
+items.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+        <div class="title">${item.name}</div>
+
+        <div class="label">SRC</div>
+        <div id="wave-src-${item.name}" class="wave-box"></div>
+        <button id="play-src-${item.name}">Play SRC</button>
+
+        <div class="label">TGT</div>
+        <div id="wave-tgt-${item.name}" class="wave-box"></div>
+        <div class="rating-container">
+            <button id="play-tgt-${item.name}">Play TGT</button>
+            <div id="stars-tgt-${item.name}" class="stars"></div>
+        </div>
+
+        <div class="label">OUTPUT</div>
+        <div id="wave-out-${item.name}" class="wave-box"></div>
+        <div class="rating-container">
+            <button id="play-out-${item.name}">Play OUT</button>
+            <div id="stars-out-${item.name}" class="stars"></div>
+        </div>
+    `;
+
+    document.body.appendChild(card);
+
+    const ws_src = WaveSurfer.create({
+        container: `#wave-src-${item.name}`,
+        height: 70,
+        barWidth: 5,
+        barRadius: 10,
+        barGap: 2.5,
+        normalize: true,
+        responsive: true
+    });
+    ws_src.load(item.src);
+
+    const ws_tgt = WaveSurfer.create({
+        container: `#wave-tgt-${item.name}`,
+        height: 70,
+        barWidth: 5,
+        barRadius: 10,
+        barGap: 2.5,
+        normalize: true,
+        responsive: true
+    });
+    ws_tgt.load(item.tgt);
+
+    const ws_out = WaveSurfer.create({
+        container: `#wave-out-${item.name}`,
+        height: 70,
+        barWidth: 5,
+        barRadius: 10,
+        barGap: 2.5,
+        normalize: true,
+        responsive: true
+    });
+    ws_out.load(item.out);
+
+    document.getElementById(`play-src-${item.name}`).onclick = () => ws_src.playPause();
+    document.getElementById(`play-tgt-${item.name}`).onclick = () => ws_tgt.playPause();
+    document.getElementById(`play-out-${item.name}`).onclick = () => ws_out.playPause();
+
+    // Tạo hệ thống sao cho TGT (MOS)
+    const starsTgtContainer = document.getElementById(`stars-tgt-${item.name}`);
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement("div");
+        star.className = "star";
+        star.textContent = "★";
+        star.dataset.value = i;
+        star.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll(`#stars-tgt-${item.name} .star`).forEach((s) => {
+                if (s.dataset.value <= i) {
+                    s.classList.add("active");
+                } else {
+                    s.classList.remove("active");
+                }
+            });
+        };
+        starsTgtContainer.appendChild(star);
+    }
+
+    // Tạo hệ thống sao cho OUT (SMOS)
+    const starsOutContainer = document.getElementById(`stars-out-${item.name}`);
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement("div");
+        star.className = "star";
+        star.textContent = "★";
+        star.dataset.value = i;
+        star.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll(`#stars-out-${item.name} .star`).forEach((s) => {
+                if (s.dataset.value <= i) {
+                    s.classList.add("active");
+                } else {
+                    s.classList.remove("active");
+                }
+            });
+        };
+        starsOutContainer.appendChild(star);
+    }
+});
+</script>
+
+</body>
+</html>

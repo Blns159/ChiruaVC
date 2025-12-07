@@ -1,7 +1,10 @@
 dataset/
 output/
+output_base/
 logs/
 wavlm/WavLM-Large.pt
 hifigan/generator_v1
+CER_WER/
+MOS/
 __pycache__/
 .vunv
